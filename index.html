@@ -358,6 +358,7 @@ function myName(){return $("lname").value.trim().slice(0,16)}
 function teamNames(){return[$("t0").value.trim()||"Team 1",$("t1").value.trim()||"Team 2"].map(s=>s.slice(0,18))}
 
 async function makeTransport(code){
+  for(let i=0;i<10&&!isClaude()&&window.self!==window.top;i++)await new Promise(r=>setTimeout(r,150));
   if(isClaude()){
     const lobby=await window.claude.use("room");
     if(!lobby)throw new Error("Online play isn't available in this view. Share the game with your players from its page in Claude, then try again.");
@@ -371,14 +372,33 @@ async function makeTransport(code){
       leave(){try{off()}catch(e){}if(r!==lobby)r.leave().catch(()=>{});else lobby.presence({s:null}).catch(()=>{})}
     };
   }
-  let mod;
-  try{mod=await import("https://esm.sh/trystero/mqtt")}catch(e){mod=await import("https://esm.sh/trystero/nostr")}
+  const SOURCES=[
+    "https://esm.sh/@trystero-p2p/mqtt@0.27.0",
+    "https://esm.sh/@trystero-p2p/nostr@0.27.0",
+    "https://esm.run/@trystero-p2p/mqtt@0.27.0",
+    "https://esm.run/@trystero-p2p/nostr@0.27.0",
+    "https://esm.sh/trystero@0.27.0"
+  ];
+  let mod=null;
+  for(const src of SOURCES){try{const m=await import(src);if(m&&typeof m.joinRoom==="function"){mod=m;break}}catch(e){}}
+  if(!mod)throw new Error("Couldn't load the online-play library. Check your internet connection and try again. Online play needs the game opened from a web address (like GitHub Pages), not from inside another app.");
   const room=mod.joinRoom({appId:"gobble-gobble-go-thanksgiving"},"gobble-"+code);
-  const [send,get]=room.makeAction("state");
+  const action=room.makeAction("state");
   const map=new Map();let cb=()=>{},mine=null,tm=0;
-  get((d,id)=>{if(d&&d.code===code){map.set(id,d);cb(map)}});
-  room.onPeerJoin(id=>{if(mine)send(mine,id)});
-  room.onPeerLeave(id=>{map.delete(id);cb(map)});
+  const onMsg=(d,id)=>{if(d&&d.code===code&&id){map.set(id,d);cb(map)}};
+  const joined=id=>{if(mine)send(mine,id)};
+  const left=id=>{map.delete(id);cb(map)};
+  let send;
+  if(Array.isArray(action)){
+    const [s,g]=action;
+    send=(d,id)=>{try{id?s(d,id):s(d)}catch(e){}};
+    g((d,id)=>onMsg(d,id));
+    room.onPeerJoin(joined);room.onPeerLeave(left);
+  }else{
+    send=(d,id)=>{try{Promise.resolve(action.send(d,id?{target:id}:undefined)).catch(()=>{})}catch(e){}};
+    action.onMessage=(d,meta)=>onMsg(d,meta&&meta.peerId);
+    room.onPeerJoin=joined;room.onPeerLeave=left;
+  }
   const iv=setInterval(()=>{if(mine)send(mine)},3000);
   return{
     setMine(o){mine=o;map.set("me",o);if(!tm)tm=setTimeout(()=>{tm=0;send(mine)},80)},

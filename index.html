@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gobble Gobble Go!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: loud, warm, silly — a living-room party game for all ages
+   IDEA: a harvest-fair game card held up across the dinner table
+   PICTURE: a bobbing hand-drawn turkey with a fanned tail, and big flip cards
+   COLOUR and TYPE: cranberry ground, squash-gold accent, leaf orange support; Lilita One + Nunito
+   LAYOUT: one centered column, giant card, two thumb-sized buttons at the bottom */
+:root{color-scheme:light dark;--bg:light-dark(#8c1d3a,#3a0c1a);--bg2:light-dark(#a8264a,#521226);--ink:#fff7ec;--gold:#f7b733;--leaf:#ee6c2b;--card:light-dark(#fff7ec,#2b1410);--cink:light-dark(#3a1410,#fff2e2);--green:#4c9a2a}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;min-height:100dvh;background:radial-gradient(120% 70% at 50% 0%,var(--bg2),var(--bg));color:var(--ink);font:17px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+main{max-width:520px;margin:0 auto;padding:16px 18px 28px;min-height:100dvh;display:flex;flex-direction:column}
+h1,h2,.big{font-family:"Lilita One",system-ui,sans-serif;font-weight:400;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(38px,11vw,52px);text-align:center;color:var(--gold);text-shadow:0 3px 0 #5a0f22}
+h2{font-size:32px;text-align:center}
+.sub{text-align:center;opacity:.9;margin:6px 0 0}
+.screen{display:none;flex:1;flex-direction:column;gap:16px}.screen.on{display:flex}
+.turkey{width:min(68vw,240px);margin:6px auto 0;display:block;overflow:visible}
+.turkey .bob{animation:bob 1.6s ease-in-out infinite;transform-origin:120px 190px}
+@keyframes bob{50%{transform:rotate(-4deg) translateY(-3px)}}
+.panel{background:rgba(0,0,0,.18);border-radius:20px;padding:16px}
+label{font-weight:800;font-size:15px;display:block;margin-bottom:6px}
+input[type=text]{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:14px;border:2px solid transparent;background:var(--card);color:var(--cink);min-height:48px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:10px 0;font-size:16px;background:rgba(255,255,255,.12);color:var(--ink);box-shadow:none}
+.seg button[aria-pressed=true]{background:var(--gold);color:#3a1410}
+button{font:800 18px Nunito,sans-serif;border:0;border-radius:16px;min-height:52px;padding:12px 18px;cursor:pointer;color:#3a1410;background:var(--gold);box-shadow:0 5px 0 #b77a0f;transition:transform .08s}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #b77a0f}
+.go{font-family:"Lilita One";font-weight:400;font-size:26px;min-height:64px}
+.ghost{background:rgba(255,255,255,.14);color:var(--ink);box-shadow:none}
+.yes{background:var(--green);color:#fff;box-shadow:0 5px 0 #2d6014}
+.no{background:var(--leaf);color:#fff;box-shadow:0 5px 0 #a3420f}
+.score{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.team{border-radius:18px;padding:10px 12px;text-align:center;background:rgba(0,0,0,.2);border:3px solid transparent}
+.team.cur{border-color:var(--gold)}
+.team b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team .big{font-size:38px;color:var(--gold)}
+.card{background:var(--card);color:var(--cink);border-radius:26px;padding:22px 18px;text-align:center;box-shadow:0 10px 0 rgba(0,0,0,.25);position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;min-height:260px}
+.card .mode{display:inline-flex;align-self:center;gap:8px;align-items:center;background:var(--leaf);color:#fff;font-weight:800;border-radius:99px;padding:6px 14px;font-size:15px}
+.card .word{font-family:"Lilita One";font-size:clamp(34px,10vw,50px);line-height:1.05;text-wrap:balance}
+.card .hint{font-size:15px;opacity:.75}
+.flip{animation:flip .35s ease}@keyframes flip{from{transform:rotateX(70deg) scale(.95);opacity:.2}}
+.timer{display:flex;align-items:center;gap:12px}
+.bar{flex:1;height:16px;border-radius:99px;background:rgba(0,0,0,.25);overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--gold);border-radius:99px;transition:width .25s linear}
+.bar.hurry i{background:var(--leaf)}
+.secs{font-family:"Lilita One";font-size:30px;width:2.2em;text-align:right}
+.modes{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.modes li{display:flex;gap:12px;align-items:center;background:rgba(0,0,0,.16);border-radius:14px;padding:10px 12px;font-size:15px}
+.modes svg{flex:none}
+.log{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.log li{padding:4px 10px;border-radius:99px;font-size:14px;font-weight:700}
+.log .g{background:var(--green)}.log .s{background:rgba(255,255,255,.15);text-decoration:line-through}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tiny{font-size:14px;min-height:44px;padding:8px 14px}
+.note{font-size:13px;text-align:center;opacity:.75;margin:0}
+.pad{position:absolute;inset:0;border-radius:26px;background:#fffdf7;overflow:hidden}.pad[hidden],#drawBtn[hidden],.peekw[hidden]{display:none}
+.pad canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.tools{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px}
+.tools button{flex:1;min-height:44px;font-size:15px;background:#3a1410;color:#fff;box-shadow:none;opacity:.9}
+.peekw{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#2f6fb0;color:#fff;font-weight:800;padding:6px 14px;border-radius:99px;white-space:nowrap}
+#drawBtn{align-self:center;background:#2f6fb0;color:#fff;box-shadow:0 5px 0 #1d4a78}
+[hidden]{display:none!important}
+button:disabled{opacity:.5;cursor:not-allowed}
+.code{font-family:"Lilita One",sans-serif;font-size:clamp(56px,18vw,80px);line-height:1;text-align:center;letter-spacing:.12em;color:var(--gold);text-shadow:0 4px 0 #5a0f22}
+.plist{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.plist .col{background:rgba(0,0,0,.18);border-radius:18px;padding:10px}
+.plist h3{margin:0 0 4px;font-size:16px;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plist button{display:block;width:100%;min-height:44px;margin-top:6px;font-size:15px;background:rgba(255,255,255,.14);color:var(--ink);box-shadow:none;text-align:start;padding:8px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plist button:disabled{opacity:1;cursor:default}
+.plist .me{outline:2px solid var(--gold)}
+.pad.watch canvas{pointer-events:none}.pad.watch .tools{display:none}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:9}
+.pop{animation:pop .3s}@keyframes pop{50%{transform:scale(1.25)}}
+@media(prefers-reduced-motion:reduce){.turkey .bob,.flip,.pop{animation:none}}
+</style>
+</head>
+<body>
+<main>
+
+<section class="screen on" id="lobby">
+  <svg class="turkey" viewBox="0 0 240 230" aria-hidden="true"><use href="#tk"/></svg>
+  <h1>Gobble Gobble Go!</h1>
+  <p class="sub">Pass one phone around, or have everyone join on their own phone.</p>
+  <div class="panel">
+    <label for="lname">Your name</label>
+    <input type="text" id="lname" maxlength="16" placeholder="Aunt Linda" autocomplete="nickname">
+    <button class="go" id="create" style="width:100%;margin-top:14px">Create room</button>
+    <label for="jcode" style="margin-top:16px">Have a room code?</label>
+    <div class="row"><input type="text" id="jcode" maxlength="4" placeholder="ABCD" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.2em;flex:1.4"><button id="join">Join room</button></div>
+    <button class="ghost" id="rejoin" hidden style="width:100%;margin-top:10px"></button>
+    <p class="note" id="lstat" role="status" style="margin-top:10px"></p>
+  </div>
+  <button class="ghost" id="solo">Solo / local: pass one phone around</button>
+</section>
+
+<section class="screen" id="room">
+  <p class="sub">Room code</p>
+  <div class="code" id="roomCode"></div>
+  <p class="note">Everyone opens this game, types their name and joins with this code. Up to 10 players.</p>
+  <div class="plist" id="plist"></div>
+  <p class="note" id="rstat" role="status"></p>
+  <div style="flex:1"></div>
+  <button class="go" id="startOnline">Start multiplayer game</button>
+  <button class="ghost" id="roomSettings">Game settings</button>
+  <button class="ghost tiny" id="leave">Leave room</button>
+</section>
+
+<section class="screen" id="setup">
+  <svg class="turkey" viewBox="0 0 240 230" aria-hidden="true"><g class="bob" id="tk"></g></svg>
+  <h1>Gobble Gobble Go!</h1>
+  <p class="sub">Two teams, one phone. Act, describe or gobble your way to glory before the timer runs out.</p>
+  <div class="panel">
+    <div class="row">
+      <div><label for="t0">Team 1</label><input type="text" id="t0" value="Drumsticks" maxlength="18"></div>
+      <div><label for="t1">Team 2</label><input type="text" id="t1" value="Pumpkin Pies" maxlength="18"></div>
+    </div>
+    <label style="margin-top:14px">Seconds per turn</label>
+    <div class="seg" data-k="secs"><button data-v="45">45</button><button data-v="60">60</button><button data-v="90">90</button></div>
+    <label style="margin-top:14px">Turns per team</label>
+    <div class="seg" data-k="rounds"><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div>
+    <label style="margin-top:14px">Song clues</label>
+    <div class="seg" data-k="songs"><button data-v="0">Off</button><button data-v="1">Some</button><button data-v="2">Lots</button></div>
+    <label style="margin-top:14px">Pictionary clues</label>
+    <div class="seg" data-k="pics"><button data-v="0">Off</button><button data-v="1">Some</button><button data-v="2">Lots</button></div>
+    <label style="margin-top:14px">Movie line clues</label>
+    <div class="seg" data-k="movies"><button data-v="0">Off</button><button data-v="1">Some</button><button data-v="2">Lots</button></div>
+  </div>
+  <button class="go" id="start">Let's play!</button>
+  <button class="go" id="backRoom" hidden>Save and back to room</button>
+  <button class="ghost" id="toOnline">Play online with everyone's phones</button>
+  <details class="panel"><summary style="font-weight:800;cursor:pointer;min-height:28px">How to play</summary>
+    <p>Pass the phone to the clue-giver on the team whose turn it is. Only they look at the screen. Each word comes with a way to give the clue:</p>
+    <ul class="modes" id="modeList"></ul>
+    <p>Tap <b>Got it!</b> when your team guesses right, <b>Skip</b> if you're stuck. Most points after the last turn wins the wishbone.</p>
+  </details>
+</section>
+
+<section class="screen" id="ready">
+  <div class="score" id="sc1"></div>
+  <svg class="turkey" viewBox="0 0 240 230" aria-hidden="true"><use href="#tk"/></svg>
+  <h2 id="readyT">Pass the phone!</h2>
+  <p class="sub" id="readyS"></p>
+  <div style="flex:1"></div>
+  <button class="go" id="begin">I'm ready, start the clock</button>
+  <button class="ghost tiny" id="quit">End game</button>
+</section>
+
+<section class="screen" id="play">
+  <div class="top"><b id="playTeam"></b><button class="ghost tiny" id="pause">Pause</button></div>
+  <div class="timer"><div class="bar" id="bar"><i></i></div><span class="secs" id="secs">60</span></div>
+  <div class="card" id="card"><span class="mode" id="mode"></span><div class="word" id="word"></div><div class="hint" id="hint"></div><button id="drawBtn" hidden>Hide the word &amp; start drawing</button>
+    <div class="pad" id="pad" hidden><canvas id="cv" aria-label="Drawing pad"></canvas><div class="peekw" id="peekw" hidden></div>
+      <div class="tools"><button id="peek">Peek at word</button><button id="clr">Clear</button></div></div></div>
+  <div class="row"><button class="no go" id="skip">Skip</button><button class="yes go" id="got">Got it!</button></div>
+  <p class="note">Points this turn: <b id="pts">0</b> · <button class="ghost tiny" id="undo" style="min-height:44px">Undo last</button></p>
+</section>
+
+<section class="screen" id="paused">
+  <h2 style="margin-top:20vh">Paused</h2><p class="sub">The word is hidden. Gravy break!</p>
+  <button class="go" id="resume">Keep going</button>
+</section>
+
+<section class="screen" id="over">
+  <h2 id="overT">Time's up!</h2>
+  <p class="sub" id="overS"></p>
+  <ul class="log" id="log"></ul>
+  <div class="score" id="sc2"></div>
+  <div style="flex:1"></div>
+  <button class="go" id="next">Next team</button>
+</section>
+
+<section class="screen" id="final">
+  <svg class="turkey" viewBox="0 0 240 230" aria-hidden="true"><use href="#tk"/></svg>
+  <h1 id="winT"></h1>
+  <p class="sub" id="winS"></p>
+  <div class="score" id="sc3"></div>
+  <div style="flex:1"></div>
+  <button class="go" id="again">Play again</button>
+  <button class="ghost" id="newTeams">Change teams</button>
+</section>
+
+</main>
+<canvas id="confetti"></canvas>
+<script>
+{
+const MODES={
+  act:{n:"Act it out",h:"No talking, no sounds. Just moves!",c:"#ee6c2b"},
+  talk:{n:"Describe it",h:"Talk all you want, but don't say the word.",c:"#4c9a2a"},
+  gobble:{n:"Gobble only",h:"You can only say “gobble”. Make it count!",c:"#8c1d3a"},
+  pic:{n:"Pictionary",h:"Draw it on the screen for your team. No letters, numbers or talking!",c:"#2f6fb0"},
+  sing:{n:"Gobble the song",h:"Sing the tune using only the word “gobble”. Team names the song!",c:"#7b3fa0"},
+  movie:{n:"Gobble the movie line",h:"Act out the line, saying only “gobble”. Team names the movie!",c:"#0d7680"}
+};
+const SONGS=[
+["Rock Around the Clock","Bill Haley & His Comets",1954],["Johnny B. Goode","Chuck Berry",1958],["Jailhouse Rock","Elvis Presley",1957],["La Bamba","Ritchie Valens",1958],["The Twist","Chubby Checker",1960],
+["I Want to Hold Your Hand","The Beatles",1963],["Twist and Shout","The Beatles",1964],["My Girl","The Temptations",1964],["Respect","Aretha Franklin",1967],["Sweet Caroline","Neil Diamond",1969],["Good Vibrations","The Beach Boys",1966],["Ain't No Mountain High Enough","Marvin Gaye & Tammi Terrell",1967],["Sugar, Sugar","The Archies",1969],
+["Dancing Queen","ABBA",1976],["Stayin' Alive","Bee Gees",1977],["I Will Survive","Gloria Gaynor",1978],["Y.M.C.A.","Village People",1978],["We Will Rock You","Queen",1977],["Don't Stop Me Now","Queen",1979],["September","Earth, Wind & Fire",1978],["ABC","The Jackson 5",1970],["Mamma Mia","ABBA",1975],
+["Billie Jean","Michael Jackson",1983],["Thriller","Michael Jackson",1983],["Girls Just Want to Have Fun","Cyndi Lauper",1983],["Livin' on a Prayer","Bon Jovi",1986],["Don't Stop Believin'","Journey",1981],["Take On Me","a-ha",1985],["Walking on Sunshine","Katrina and the Waves",1985],["Footloose","Kenny Loggins",1984],["Eye of the Tiger","Survivor",1982],["We Are the World","USA for Africa",1985],
+["...Baby One More Time","Britney Spears",1998],["Wannabe","Spice Girls",1996],["I Want It That Way","Backstreet Boys",1999],["MMMBop","Hanson",1997],["Macarena","Los del Río",1995],["My Heart Will Go On","Celine Dion",1997],["Ice Ice Baby","Vanilla Ice",1990],["Livin' la Vida Loca","Ricky Martin",1999],["All Star","Smash Mouth",1999],
+["Bye Bye Bye","*NSYNC",2000],["Hey Ya!","OutKast",2003],["Crazy in Love","Beyoncé",2003],["Umbrella","Rihanna",2007],["Since U Been Gone","Kelly Clarkson",2004],["Single Ladies","Beyoncé",2008],["I Gotta Feeling","The Black Eyed Peas",2009],["Mr. Brightside","The Killers",2004],["Party in the U.S.A.","Miley Cyrus",2009],["Viva la Vida","Coldplay",2008],
+["Call Me Maybe","Carly Rae Jepsen",2012],["Happy","Pharrell Williams",2013],["Shake It Off","Taylor Swift",2014],["Uptown Funk","Mark Ronson ft. Bruno Mars",2014],["Rolling in the Deep","Adele",2010],["Firework","Katy Perry",2010],["Can't Stop the Feeling!","Justin Timberlake",2016],["Old Town Road","Lil Nas X",2019],["Let It Go","Idina Menzel",2013],["Despacito","Luis Fonsi & Daddy Yankee",2017],["Roar","Katy Perry",2013],
+["Blinding Lights","The Weeknd",2020],["Levitating","Dua Lipa",2020],["drivers license","Olivia Rodrigo",2021],["As It Was","Harry Styles",2022],["Anti-Hero","Taylor Swift",2022],["Flowers","Miley Cyrus",2023],["Dance the Night","Dua Lipa",2023],["Espresso","Sabrina Carpenter",2024],["Die with a Smile","Lady Gaga & Bruno Mars",2024],["APT.","ROSÉ & Bruno Mars",2024],["Golden","HUNTR/X (KPop Demon Hunters)",2025]
+].map(([w,a,y])=>({w,a,y,song:true}));
+const MOVIES=[
+["There's no place like home.","The Wizard of Oz",1939],["Magic mirror on the wall...","Snow White and the Seven Dwarfs",1937],["It's alive! It's alive!","Frankenstein",1931],["Rosebud.","Citizen Kane",1941],["Here's looking at you, kid.","Casablanca",1942],["Bond. James Bond.","Dr. No",1962],["Supercalifragilisticexpialidocious!","Mary Poppins",1964],
+["You're gonna need a bigger boat.","Jaws",1975],["Yo, Adrian!","Rocky",1976],["May the Force be with you.","Star Wars",1977],["No, I am your father.","The Empire Strikes Back",1980],["It's a trap!","Return of the Jedi",1983],["Snakes. Why'd it have to be snakes?","Raiders of the Lost Ark",1981],["E.T. phone home.","E.T. the Extra-Terrestrial",1982],["Wax on, wax off.","The Karate Kid",1984],["Roads? Where we're going, we don't need roads.","Back to the Future",1985],["Hey, you guys!","The Goonies",1985],["I feel the need... the need for speed!","Top Gun",1986],["Bueller... Bueller...","Ferris Bueller's Day Off",1986],["Inconceivable!","The Princess Bride",1987],["If you build it, he will come.","Field of Dreams",1989],
+["Keep the change, ya filthy animal.","Home Alone",1990],["Cowabunga!","Teenage Mutant Ninja Turtles",1990],["There's no crying in baseball!","A League of Their Own",1992],["Hakuna matata!","The Lion King",1994],["Life is like a box of chocolates.","Forrest Gump",1994],["To infinity and beyond!","Toy Story",1995],["Houston, we have a problem.","Apollo 13",1995],["I'm the king of the world!","Titanic",1997],
+["Wilson!","Cast Away",2000],["Ogres are like onions.","Shrek",2001],["You shall not pass!","The Lord of the Rings: The Fellowship of the Ring",2001],["You're a wizard, Harry.","Harry Potter and the Sorcerer's Stone",2001],["Ohana means family.","Lilo & Stitch",2002],["With great power comes great responsibility.","Spider-Man",2002],["My precious.","The Lord of the Rings: The Two Towers",2002],["Just keep swimming.","Finding Nemo",2003],["Son of a nutcracker!","Elf",2003],["Where's my super suit?","The Incredibles",2004],["I'm ready! I'm ready!","The SpongeBob SquarePants Movie",2004],["Ka-chow!","Cars",2006],["Adventure is out there!","Up",2009],
+["It's so fluffy!","Despicable Me",2010],["You is kind. You is smart. You is important.","The Help",2011],["I volunteer as tribute!","The Hunger Games",2012],["Hi, I'm Olaf, and I like warm hugs!","Frozen",2013],["I am Groot.","Guardians of the Galaxy",2014],["Remember me.","Coco",2017],["Wakanda forever!","Black Panther",2018],["Avengers... assemble.","Avengers: Endgame",2019],["Hi Barbie!","Barbie",2023]
+].map(([w,t,y])=>({w:"“"+w+"”",t,a:"Movie: "+t,y,mov:true}));
+const PICS=["Turkey","Pumpkin pie","Pilgrim hat","Cornucopia","Falling leaf","Acorn","Scarecrow","Football","Corn on the cob","Apple","Wishbone","The Mayflower","Rolling pin","Oven","Candle","Turkey leg","Pumpkin","Squirrel","Owl","Rake","Leaf pile","Scarf","Mittens","Mug of hot cocoa","Fireplace","Parade balloon","Marching drum","Airplane","Car with suitcases on top","Dinner table","Fork and knife","Bowl of mashed potatoes","Gravy boat","Dinner roll","Slice of pie","Can of whipped cream","Ice cream cone","Carrot","Sweet potato","Marshmallow","Hay bale","Red barn","Tractor","Sunflower","Full moon","Tree with no leaves","Bird flying south","Dog begging","Sleeping cat","Grandma's house","Snowman","Turkey wearing sunglasses","Chef's hat","Cooking pot","Salt and pepper shakers","Hand turkey","Football helmet","Goal post","TV remote","Couch nap","Pie in the face","Cranberries","Cupcake","Corn maze","Wheelbarrow","Apple tree","Mushroom","Spider web","Hot air balloon","Train","Map","Gift box"].map(w=>({w,pic:true}));
+const WORDS=["Turkey","Mashed potatoes","Gravy boat","Pumpkin pie","Cranberry sauce","Parade balloon","Football","Pilgrim hat","The Mayflower","Corn on the cob","Stuffing","Nap on the couch","Wishbone","Leftovers","Scarecrow","Raking leaves","Hayride","Apple cider","Sweet potatoes","Marshmallows","Dinner rolls","Setting the table","Autumn leaves","Acorn","Squirrel","Whipped cream","Oven mitt","Carving the turkey","Grandma's hug","Kids' table","Stretchy pants","Food coma","Turkey trot race","Marching band","Cornucopia","Pumpkin","Corn maze","Burnt rolls","Spilled gravy","Dog begging for scraps","Pecan pie","Green bean casserole","Mac and cheese","Butter","Salt shaker","Family photo","Washing dishes","Feather","Hand turkey drawing","Candle","Tablecloth","Cozy sweater","Fireplace","Hot cocoa","Touchdown","Airport line","Road trip","Pie crust","Rolling pin","Second helping","Pass the potatoes","Thank-you note","Apple picking","Hay bale","Harvest moon","Baking cookies","Board game night","Wearing a scarf","Turkey costume","Pop-up timer","Rake","Wheelbarrow","Gobble gobble","Cooking show host","Grocery store rush","Forgetting the rolls in the oven","Crunchy leaves","Pumpkin spice","Big yawn","Sneaking a taste","Saying thanks","Folding napkins","Cheesy grin","Pie-eating contest","Kitchen timer","Mixing bowl","Corn bread","Cousins arriving","Group hug","Falling asleep in a chair","Balloon float","Cold drumstick at midnight",
+"Gravy on everything","Turkey sandwich","Pie for breakfast","Unbuttoning your pants","Uncle telling a long story","Fighting over the last roll","Basting the turkey","Peeling potatoes","Thawing the turkey","Smoke alarm going off","Jell-O mold","Deviled eggs","Cheese plate","Pumpkin carving","Pinecone","Bird flying south","Owl","Deer","Chipmunk","Wild turkey running","Rain boots","Puddle jumping","Jumping in a leaf pile","Flannel shirt","Wool socks","Beanie hat","Mittens","Bonfire","Roasting marshmallows","S'mores","Campfire song","Cozy blanket","Watching the parade on TV","Snoopy balloon float","Santa at the end of the parade","Halftime show","Field goal","Referee","Fumble","Cheering fans","Foam finger","Tailgate","Backyard football","Thumb war","Charades","Card game","Puzzle","Taking a selfie","Video call with family","Baby's first Thanksgiving","Grandpa snoring","Hide and seek","Making place cards","Gravy waterfall","Mashed potato volcano","Overflowing plate","Doggy bag","Tupperware","Dishwasher","Empty pie plate","Clean plate club","Too full to move","Stretching after dinner","Walk around the block","Black Friday line","Shopping cart","Wrapping paper","Putting up the tree","String lights","Pilgrim shoes with buckles","Native corn","Squash","Apple pie","Caramel apple","Popcorn","Corn husk doll","Turkey feather headband","Gratitude list","Group toast","Clinking glasses","Sparkling cider","Ice cubes","Pouring gravy","Whisking","Measuring cup","Recipe card","Grandma's secret recipe","Chef's kiss"];
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let cfg=Object.assign({t:["Drumsticks","Pumpkin Pies"],secs:60,rounds:4,songs:1,movies:1,pics:1},store.get("ggg-cfg",{}));
+let G=null,timer=null,deck=[],sdeck=[],mdeck=[],pdeck=[],cur=null;
+
+/* turkey drawing */
+const feathers=["#ee6c2b","#f7b733","#c0392b","#8a4b1e","#ee6c2b","#f7b733","#c0392b"];
+let f="";feathers.forEach((c,i)=>{const a=-75+i*25;f+=`<ellipse cx="120" cy="58" rx="22" ry="62" fill="${c}" stroke="#3a1410" stroke-width="3" transform="rotate(${a} 120 128)"/>`});
+$("tk").innerHTML=f+`<ellipse cx="120" cy="148" rx="58" ry="54" fill="#8a4b1e" stroke="#3a1410" stroke-width="3"/><ellipse cx="108" cy="160" rx="34" ry="30" fill="#a8622b"/>
+<circle cx="120" cy="92" r="30" fill="#a8622b" stroke="#3a1410" stroke-width="3"/><circle cx="109" cy="86" r="7" fill="#fff"/><circle cx="131" cy="86" r="7" fill="#fff"/><circle cx="111" cy="87" r="3.5" fill="#3a1410"/><circle cx="129" cy="87" r="3.5" fill="#3a1410"/>
+<path d="M113 98 L127 98 L120 110Z" fill="#f7b733" stroke="#3a1410" stroke-width="2.5" stroke-linejoin="round"/><path d="M124 104 q8 6 2 20 q-8 -6 -2 -20Z" fill="#d6304f" stroke="#3a1410" stroke-width="2.5"/>
+<path d="M98 198 v20 m-8 0 l8 -6 l8 6 M142 198 v20 m-8 0 l8 -6 l8 6" stroke="#f7b733" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+
+const icon=c=>`<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="10" fill="${c}"/></svg>`;
+$("modeList").innerHTML=Object.values(MODES).map(m=>`<li>${icon(m.c)}<span><b>${m.n}.</b> ${m.h}</span></li>`).join("");
+
+/* setup */
+$("t0").value=cfg.t[0];$("t1").value=cfg.t[1];
+document.querySelectorAll(".seg").forEach(s=>{const k=s.dataset.k;const paint=()=>s.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.v===cfg[k]));paint();s.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;cfg[k]=+b.dataset.v;paint();store.set("ggg-cfg",cfg)})});
+
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));window.scrollTo(0,0)}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function draw(){
+  const L=[0,.17,.3],r=Math.random(),ps=L[cfg.songs],pm=L[cfg.movies],pp=L[cfg.pics];
+  if(r>=ps+pm&&r<ps+pm+pp){if(!pdeck.length)pdeck=shuffle(PICS.slice());return Object.assign({m:"pic"},pdeck.pop())}
+  if(r<ps){if(!sdeck.length)sdeck=shuffle(SONGS.slice());return Object.assign({m:"sing"},sdeck.pop())}
+  if(r<ps+pm){if(!mdeck.length)mdeck=shuffle(MOVIES.slice());return Object.assign({m:"movie"},mdeck.pop())}
+  if(!deck.length)deck=shuffle(WORDS.slice());const keys=["act","talk","gobble"];return{w:deck.pop(),m:keys[Math.random()*3|0]}}
+/* pictionary pad */
+const pad=$("pad"),cv=$("cv"),cx=cv.getContext("2d");let pen=null,peekT=0;
+function openPad(){pad.hidden=false;const b=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;cv.width=b.width*d;cv.height=b.height*d;cx.lineCap=cx.lineJoin="round";cx.lineWidth=5*d;cx.strokeStyle=cx.fillStyle="#3a1410"}
+function closePad(){pad.hidden=true;$("peekw").hidden=true}
+function pos(e){const b=cv.getBoundingClientRect(),d=cv.width/b.width;return[(e.clientX-b.left)*d,(e.clientY-b.top)*d]}
+cv.addEventListener("pointerdown",e=>{e.preventDefault();pen=pos(e);try{cv.setPointerCapture(e.pointerId)}catch(_){}cx.beginPath();cx.arc(pen[0],pen[1],cx.lineWidth/2,0,7);cx.fill()});
+cv.addEventListener("pointermove",e=>{if(!pen)return;const p=pos(e);cx.beginPath();cx.moveTo(pen[0],pen[1]);cx.lineTo(p[0],p[1]);cx.stroke();pen=p});
+["pointerup","pointercancel","pointerleave"].forEach(t=>cv.addEventListener(t,()=>pen=null));
+$("drawBtn").onclick=openPad;
+$("clr").onclick=()=>cx.clearRect(0,0,cv.width,cv.height);
+$("peek").onclick=()=>{const p=$("peekw");p.textContent=cur.w;p.hidden=false;clearTimeout(peekT);peekT=setTimeout(()=>p.hidden=true,1500)};
+function render(c,anim){
+  const m=MODES[c.m],el=$("card");closePad();$("drawBtn").hidden=c.m!=="pic";
+  $("mode").textContent=m.n;$("mode").style.background=m.c;$("word").textContent=c.w;
+  $("hint").innerHTML=(c.song||c.mov?`<b>${esc(c.a)} · ${c.y}</b><br>`:"")+esc(m.h);
+  if(anim){el.classList.remove("flip");void el.offsetWidth;el.classList.add("flip")}
+}
+function scores(el){el.innerHTML=G.t.map((n,i)=>`<div class="team ${i===G.turn%2?"cur":""}"><b>${esc(n)}</b><span class="big" id="${el.id}-${i}">${G.s[i]}</span></div>`).join("")}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+/* sounds */
+let ac=null,soundOn=true;
+function tone(fr,d,type="square",when=0,vol=.08){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+when;o.type=type;o.frequency.setValueAtTime(fr,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}}
+const gobble=()=>{[520,380,560,400,600].forEach((f,i)=>tone(f,.08,"sawtooth",i*.07,.06))};
+const buzz=()=>tone(140,.5,"sawtooth",0,.1);
+const tick=()=>tone(880,.05,"sine",0,.05);
+const buzzVib=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+
+function newGame(){
+  cfg.t=[$("t0").value.trim()||"Team 1",$("t1").value.trim()||"Team 2"];store.set("ggg-cfg",cfg);
+  G={t:cfg.t.slice(),s:[0,0],turn:0,total:cfg.rounds*2,secs:cfg.secs};deck=shuffle(WORDS.slice());sdeck=shuffle(SONGS.slice());mdeck=shuffle(MOVIES.slice());pdeck=shuffle(PICS.slice());ready();
+}
+function ready(){
+  const i=G.turn%2,r=Math.floor(G.turn/2)+1;
+  scores($("sc1"));
+  $("readyT").textContent=`${G.t[i]}, you're up!`;
+  $("readyS").textContent=`Turn ${r} of ${cfg.rounds}. Pick a clue-giver and hand them the phone. Everyone else on ${G.t[i]} gets ready to shout!`;
+  show("ready");
+}
+function begin(){
+  G.left=G.secs;G.pts=0;G.hist=[];G.paused=false;
+  $("playTeam").textContent=G.t[G.turn%2];$("pts").textContent=0;
+  next();show("play");paint();
+  timer=setInterval(()=>{if(G.paused)return;G.left--;paint();if(G.left<=5&&G.left>0)tick();if(G.left<=0)end()},1000);
+}
+function paint(){$("secs").textContent=G.left;$("bar").firstElementChild.style.width=(G.left/G.secs*100)+"%";$("bar").classList.toggle("hurry",G.left<=10)}
+function next(){
+  cur=draw();render(cur,true);
+}
+function mark(ok){
+  if(G.left<=0)return;
+  G.hist.push({w:cur.w,ok,c:cur});if(ok){G.pts++;gobble();buzzVib(40)}
+  $("pts").textContent=G.pts;next();
+}
+function undo(){const h=G.hist.pop();if(!h)return;if(h.ok)G.pts--;$("pts").textContent=G.pts;if(cur.song)sdeck.push(cur);else if(cur.mov)mdeck.push(cur);else if(cur.pic)pdeck.push(cur);else deck.push(cur.w);cur=h.c;render(cur,false)}
+function end(){
+  clearInterval(timer);buzz();buzzVib([200,80,200]);
+  const i=G.turn%2;G.s[i]+=G.pts;
+  $("overT").textContent=G.pts>=6?"Gobble-tastic!":G.pts>=3?"Time's up!":"Time's up, turkeys!";
+  $("overS").textContent=`${G.t[i]} scored ${G.pts} point${G.pts===1?"":"s"} this turn.`;
+  $("log").innerHTML=G.hist.map(h=>`<li class="${h.ok?"g":"s"}">${esc(h.c.t||h.w)}</li>`).join("");
+  G.turn++;
+  scores($("sc2"));
+  $("next").textContent=G.turn>=G.total?"See who won":`Pass to ${G.t[G.turn%2]}`;
+  show("over");
+  const el=$(`sc2-${i}`);el&&el.classList.add("pop");
+}
+function finish(){
+  const [a,b]=G.s;
+  $("winT").textContent=a===b?"It's a tie!":`${G.t[a>b?0:1]} win!`;
+  $("winS").textContent=a===b?"Everybody gets an extra slice of pie.":`${G.t[a>b?0:1]} get the wishbone. ${G.t[a>b?1:0]} do the dishes (just kidding... maybe).`;
+  G.turn=-1;scores($("sc3"));show("final");confetti();gobble();
+}
+
+/* confetti */
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cv=$("confetti"),x=cv.getContext("2d"),W=cv.width=innerWidth,H=cv.height=innerHeight;
+  const cols=["#f7b733","#ee6c2b","#c0392b","#8a4b1e","#4c9a2a"];
+  const ps=Array.from({length:120},()=>({x:Math.random()*W,y:-20-Math.random()*H*.5,r:6+Math.random()*8,c:cols[Math.random()*5|0],v:2+Math.random()*3,a:Math.random()*6,s:(Math.random()-.5)*.2}));
+  let n=0;const loop=()=>{x.clearRect(0,0,W,H);ps.forEach(p=>{p.y+=p.v;p.a+=p.s;p.x+=Math.sin(p.a)*1.5;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.beginPath();x.ellipse(0,0,p.r,p.r*.45,0,0,7);x.fill();x.restore()});if(++n<260)requestAnimationFrame(loop);else x.clearRect(0,0,W,H)};loop();
+}
+
+$("start").onclick=newGame;
+$("begin").onclick=begin;
+$("got").onclick=()=>mark(true);
+$("skip").onclick=()=>mark(false);
+$("undo").onclick=undo;
+$("pause").onclick=()=>{G.paused=true;show("paused")};
+$("resume").onclick=()=>{G.paused=false;show("play")};
+$("next").onclick=()=>G.turn>=G.total?finish():ready();
+$("quit").onclick=finish;
+$("again").onclick=()=>{G={t:G.t,s:[0,0],turn:0,total:cfg.rounds*2,secs:cfg.secs};ready()};
+$("newTeams").onclick=()=>show("setup");
+
+/* ---------- online multiplayer ---------- */
+const NET={on:false,T:null,code:"",host:false,NS:null,states:new Map(),acts:[],ink:null,inkLen:0,inkT:0,lastCardN:-1,prev:{},hostTimer:0,undo:[],waitT:0,hadHost:false};
+const PID_RE=/^[a-z0-9]{8}$/,ACTS=["start","begin","got","skip","undo","next","end","again","lobby"];
+let myPid=store.get("ggg-pid","");
+if(!PID_RE.test(myPid)){myPid=(Math.random().toString(36).slice(2)+"00000000").slice(0,8);store.set("ggg-pid",myPid)}
+NET.pid=myPid;
+const isClaude=()=>!!(window.claude&&typeof window.claude.use==="function");
+function randCode(){const L="ABCDEFGHJKLMNPQRSTUVWXYZ";let s="";for(let i=0;i<4;i++)s+=L[Math.random()*L.length|0];return s}
+function urlCode(){let c="";try{c=new URLSearchParams(location.search).get("room")||""}catch(e){}if(!c){const m=location.hash.match(/^#room-([a-z]{4})$/i);if(m)c=m[1]}return /^[a-z]{4}$/i.test(c)?c.toUpperCase():""}
+function setUrl(code){try{if(isClaude()){location.hash=code?"room-"+code.toLowerCase():""}else{const u=new URL(location.href);if(code)u.searchParams.set("room",code);else u.searchParams.delete("room");history.replaceState(null,"",u.pathname+u.search+u.hash)}}catch(e){}}
+function lstat(t){$("lstat").textContent=t}
+function myName(){return $("lname").value.trim().slice(0,16)}
+function teamNames(){return[$("t0").value.trim()||"Team 1",$("t1").value.trim()||"Team 2"].map(s=>s.slice(0,18))}
+
+async function makeTransport(code){
+  if(isClaude()){
+    const lobby=await window.claude.use("room");
+    if(!lobby)throw new Error("Online play isn't available in this view. Share the game with your players from its page in Claude, then try again.");
+    let r=lobby;
+    try{r=await lobby.join("gobble-"+code.toLowerCase())}catch(e){r=lobby}
+    const map=new Map();let cb=()=>{};
+    const off=r.onPeers(ch=>{map.clear();ch.peers.forEach(p=>{const s=p.presence&&p.presence.s;if(s&&s.code===code)map.set(p.sameTab?"me":p.peer,s)});cb(map)});
+    return{
+      setMine(o){r.presence({s:o}).catch(()=>{})},
+      onUpdate(f){cb=f},
+      leave(){try{off()}catch(e){}if(r!==lobby)r.leave().catch(()=>{});else lobby.presence({s:null}).catch(()=>{})}
+    };
+  }
+  let mod;
+  try{mod=await import("https://esm.sh/trystero/mqtt")}catch(e){mod=await import("https://esm.sh/trystero/nostr")}
+  const room=mod.joinRoom({appId:"gobble-gobble-go-thanksgiving"},"gobble-"+code);
+  const [send,get]=room.makeAction("state");
+  const map=new Map();let cb=()=>{},mine=null,tm=0;
+  get((d,id)=>{if(d&&d.code===code){map.set(id,d);cb(map)}});
+  room.onPeerJoin(id=>{if(mine)send(mine,id)});
+  room.onPeerLeave(id=>{map.delete(id);cb(map)});
+  const iv=setInterval(()=>{if(mine)send(mine)},3000);
+  return{
+    setMine(o){mine=o;map.set("me",o);if(!tm)tm=setTimeout(()=>{tm=0;send(mine)},80)},
+    onUpdate(f){cb=f},
+    leave(){clearInterval(iv);clearTimeout(tm);try{room.leave()}catch(e){}}
+  };
+}
+
+async function connect(code,asHost){
+  const name=myName();
+  if(!name){lstat("Type your name first.");$("lname").focus();return}
+  store.set("ggg-name",name);
+  lstat("Connecting…");
+  const saved=store.get("ggg-host-"+code,null);
+  const rehost=!!(saved&&saved.hostId===NET.pid&&Array.isArray(saved.players));
+  NET.host=asHost||rehost;
+  if(NET.host)NET.NS=rehost?saved:{code,hostId:NET.pid,phase:"lobby",players:[],gone:{},ack:{},t:teamNames(),s:[0,0],turn:0,total:cfg.rounds*2,secs:cfg.secs,used:[[],[]],last:[null,null],hist:[],pts:0,left:0,cardN:0,giver:null,card:null};
+  let T;
+  try{T=await makeTransport(code)}catch(e){lstat(e&&e.message?e.message:"Couldn't connect. Check your internet and try again.");NET.host=false;NET.NS=null;return}
+  Object.assign(NET,{T,on:true,code,acts:[],ink:null,lastCardN:-1,prev:{},hadHost:false});
+  store.set("ggg-last",code);setUrl(code);lstat("");$("rstat").textContent="";
+  T.onUpdate(m=>{NET.states=m;if(NET.host)hostSync();netRender()});
+  if(NET.host){hostSync();if(NET.NS.phase==="play")startClock()}
+  publish();setupMode();netRender();
+  clearTimeout(NET.waitT);
+  if(!NET.host)NET.waitT=setTimeout(()=>{if(NET.on&&!hostState())$("rstat").textContent=`Can't find the host of room ${code} yet. Double-check the code, or wait for the host to reconnect.`},8000);
+}
+
+function publish(){
+  if(!NET.T)return;
+  const o={code:NET.code,pid:NET.pid,name:myName()||"Player",acts:NET.acts};
+  if(NET.ink)o.ink=NET.ink;
+  if(NET.host){o.g=NET.NS;store.set("ggg-host-"+NET.code,NET.NS)}
+  NET.T.setMine(o);
+}
+function hostState(){
+  if(NET.host)return NET.NS;
+  let best=null;
+  NET.states.forEach(s=>{if(s&&s.g&&s.g.code===NET.code&&s.pid===s.g.hostId&&Array.isArray(s.g.players)&&(!best||s.pid<best.hostId))best=s.g});
+  return best;
+}
+
+/* host: the one source of truth for the game */
+function smallTeam(){const NS=NET.NS,a=NS.players.filter(p=>p.team===0).length,b=NS.players.length-a;return a<=b?0:1}
+function hostSync(){
+  const NS=NET.NS;if(!NS)return;let ch=false;
+  const live=new Map();
+  NET.states.forEach(s=>{if(s&&PID_RE.test(s.pid)&&!s.g)live.set(s.pid,s)});
+  live.set(NET.pid,{pid:NET.pid,name:myName()||"Host",acts:[]});
+  for(const [id,s] of live){
+    const nm=(typeof s.name==="string"&&s.name.trim()?s.name.trim():"Player").slice(0,16);
+    const p=NS.players.find(x=>x.id===id);
+    if(!p){
+      if(NS.players.length>=10)continue;
+      const old=NS.gone[id];
+      NS.players.push({id,name:nm,team:old?old.team:smallTeam()});
+      delete NS.gone[id];
+      NS.ack[id]=Math.max(0,...(Array.isArray(s.acts)?s.acts.map(a=>+(a&&a.n)||0):[0]));
+      ch=true;
+    }else if(p.name!==nm){p.name=nm;ch=true}
+  }
+  const before=NS.players.length;
+  NS.players=NS.players.filter(p=>{if(live.has(p.id))return true;NS.gone[p.id]={team:p.team};delete NS.ack[p.id];return false});
+  if(NS.players.length!==before)ch=true;
+  const gk=Object.keys(NS.gone);if(gk.length>20)gk.slice(0,gk.length-20).forEach(k=>delete NS.gone[k]);
+  if((NS.phase==="ready"||NS.phase==="play")&&!NS.players.some(p=>p.id===NS.giver)){
+    const g=pickGiver(NS.turn%2);
+    if(g)NS.giver=g;else if(NS.phase==="play")endTurn();else{NS.turn++;nextTurn()}
+    ch=true;
+  }
+  for(const [id,s] of live){
+    if(id===NET.pid||!Array.isArray(s.acts))continue;
+    const list=s.acts.filter(a=>a&&typeof a.n==="number"&&ACTS.includes(a.k)&&a.n>(NS.ack[id]||0)).sort((a,b)=>a.n-b.n);
+    for(const a of list){NS.ack[id]=a.n;hostAct(id,a.k);ch=true}
+  }
+  if(ch)publish();
+}
+function hostAct(id,k){
+  const NS=NET.NS,h=id===NET.pid,gv=id===NS.giver;
+  if(k==="start"&&h&&NS.phase==="lobby")startOnline();
+  else if(k==="again"&&h&&NS.phase==="final")startOnline();
+  else if(k==="begin"&&(gv||h)&&NS.phase==="ready")beginTurn();
+  else if((k==="got"||k==="skip")&&gv&&NS.phase==="play")markCard(k==="got");
+  else if(k==="undo"&&gv&&NS.phase==="play")undoCard();
+  else if(k==="next"&&h&&NS.phase==="over")nextTurn();
+  else if(k==="end"&&h&&NS.phase!=="lobby"){stopClock();NS.phase="final"}
+  else if(k==="lobby"&&h){stopClock();NS.phase="lobby"}
+}
+function startOnline(){
+  Object.assign(NET.NS,{t:teamNames(),s:[0,0],turn:0,total:cfg.rounds*2,secs:cfg.secs,used:[[],[]],last:[null,null],hist:[],pts:0,left:0,giver:null,card:null});
+  deck=shuffle(WORDS.slice());sdeck=shuffle(SONGS.slice());mdeck=shuffle(MOVIES.slice());pdeck=shuffle(PICS.slice());
+  nextTurn();
+}
+function pickGiver(team){
+  const NS=NET.NS,mem=NS.players.filter(p=>p.team===team).map(p=>p.id);
+  if(!mem.length)return null;
+  NS.used[team]=NS.used[team].filter(id=>mem.includes(id));
+  let pool=mem.filter(id=>!NS.used[team].includes(id));
+  if(!pool.length){NS.used[team]=[];pool=mem.length>1?mem.filter(id=>id!==NS.last[team]):mem}
+  const id=pool[Math.random()*pool.length|0];
+  NS.used[team].push(id);NS.last[team]=id;
+  return id;
+}
+function nextTurn(){
+  const NS=NET.NS;
+  for(let i=0;i<2;i++){
+    if(NS.turn>=NS.total){NS.phase="final";return}
+    const g=pickGiver(NS.turn%2);
+    if(g){NS.giver=g;NS.phase="ready";return}
+    NS.turn++;
+  }
+  NS.phase="final";
+}
+function beginTurn(){const NS=NET.NS;NS.phase="play";NS.left=NS.secs;NS.pts=0;NS.hist=[];NET.undo=[];newCard();startClock()}
+function startClock(){stopClock();NET.hostTimer=setInterval(()=>{const NS=NET.NS;if(!NET.on||!NS||NS.phase!=="play"){stopClock();return}NS.left--;if(NS.left<=0)endTurn();publish();netRender()},1000)}
+function stopClock(){clearInterval(NET.hostTimer)}
+function newCard(){const NS=NET.NS,c=draw();NS.card={w:c.w,m:c.m,a:c.a||"",y:c.y||"",t:c.t||"",song:!!c.song,mov:!!c.mov,pic:!!c.pic};NS.cardN=(NS.cardN||0)+1}
+function markCard(ok){const NS=NET.NS;NET.undo.push(NS.card);NS.hist.push({w:String(NS.card.t||NS.card.w).slice(0,32),ok});if(NS.hist.length>16)NS.hist.shift();if(ok)NS.pts++;newCard()}
+function undoCard(){const NS=NET.NS,c=NET.undo.pop();if(!c)return;const h=NS.hist.pop();if(h&&h.ok)NS.pts--;NS.card=c;NS.cardN++}
+function endTurn(){const NS=NET.NS;stopClock();NS.s[NS.turn%2]+=NS.pts;NS.left=0;NS.phase="over";NS.turn++}
+
+/* every player: send an action, draw your own view */
+function netAct(k){
+  if(!NET.on)return;
+  if(NET.host){hostAct(NET.pid,k);publish();netRender();return}
+  const last=NET.acts.length?NET.acts[NET.acts.length-1].n:0;
+  NET.acts=NET.acts.concat({n:Math.max(Date.now(),last+1),k}).slice(-6);
+  publish();
+}
+function netScores(el,NS,myT,hl){
+  el.innerHTML=[0,1].map(i=>`<div class="team ${i===hl?"cur":""}"><b>${esc(NS.t[i]||"")}${i===myT?" (you)":""}</b><span class="big">${+NS.s[i]||0}</span></div>`).join("");
+}
+function renderRoom(NS,me){
+  $("roomCode").textContent=NET.code;
+  $("plist").innerHTML=[0,1].map(t=>{
+    const ps=NS.players.filter(p=>p.team===t&&PID_RE.test(p.id));
+    return `<div class="col"><h3>${esc(NS.t[t]||"")}</h3>${ps.map(p=>`<button data-id="${p.id}" class="${p.id===NET.pid?"me":""}" ${NET.host?"":"disabled"}>${esc(p.name)}${p.id===NET.pid?" (you)":""}${p.id===NS.hostId?" · host":""}</button>`).join("")||'<p class="note">No one yet</p>'}</div>`;
+  }).join("");
+  const empty=[0,1].some(t=>!NS.players.some(p=>p.team===t));
+  $("startOnline").hidden=!NET.host;$("roomSettings").hidden=!NET.host;$("startOnline").disabled=empty;
+  let msg;
+  if(!me&&NS.players.length>=10)msg="This room is full (10 players max).";
+  else if(NET.host)msg=empty?"Each team needs at least one player. Tap a name to switch teams.":`${NS.players.length} of 10 players. Tap a name to switch teams. ${cfg.secs}-second turns, ${cfg.rounds} turns per team.`;
+  else msg=(me?`You're on ${NS.t[me.team]}. `:"")+"Waiting for the host to start the game…";
+  $("rstat").textContent=msg;
+}
+function inkMax(){return NET.host?3800-JSON.stringify(NET.NS).length:3500}
+function inkOn(){const NS=hostState();return !!(NET.on&&NS&&NS.phase==="play"&&NS.giver===NET.pid&&NS.card&&NS.card.m==="pic"&&!pad.hidden)}
+function npos(e){const b=cv.getBoundingClientRect();return[Math.round((e.clientX-b.left)/b.width*1000),Math.round((e.clientY-b.top)/b.width*1000),b]}
+function inkFull(){const p=$("peekw");p.textContent="Drawing is full. Tap Clear";p.hidden=false;clearTimeout(peekT);peekT=setTimeout(()=>p.hidden=true,1500)}
+function pubInk(){if(NET.inkT)return;NET.inkT=setTimeout(()=>{NET.inkT=0;publish()},120)}
+function drawInk(NS,gs){
+  cx.clearRect(0,0,cv.width,cv.height);
+  const ink=gs&&gs.ink;
+  if(!ink||ink.k!==NS.cardN||!Array.isArray(ink.s))return;
+  const W=cv.width,H=cv.height,r=+ink.r||1,sc=Math.min(W/1000,H/(1000*r)),ox=(W-1000*sc)/2,oy=(H-1000*r*sc)/2;
+  for(const s of ink.s){
+    if(!Array.isArray(s)||s.length<2)continue;
+    const X=i=>ox+(+s[i])*sc,Y=i=>oy+(+s[i+1])*sc;
+    cx.beginPath();
+    if(s.length===2){cx.arc(X(0),Y(0),cx.lineWidth/2,0,7);cx.fill();continue}
+    cx.moveTo(X(0),Y(0));
+    for(let i=2;i<s.length;i+=2)cx.lineTo(X(i),Y(i));
+    cx.stroke();
+  }
+}
+cv.addEventListener("pointerdown",e=>{
+  if(!inkOn())return;
+  const [x,y,b]=npos(e),NS=hostState();
+  if(!NET.ink||NET.ink.k!==NS.cardN){NET.ink={k:NS.cardN,r:Math.round(b.height/b.width*1000)/1000,s:[]};NET.inkLen=40}
+  if(NET.inkLen+12>inkMax()){inkFull();return}
+  NET.ink.s.push([x,y]);NET.inkLen+=12;pubInk();
+});
+cv.addEventListener("pointermove",e=>{
+  if(!pen||!NET.ink||!inkOn())return;
+  const st=NET.ink.s[NET.ink.s.length-1];if(!st)return;
+  const [x,y]=npos(e);
+  if(Math.abs(x-st[st.length-2])+Math.abs(y-st[st.length-1])<10)return;
+  if(NET.inkLen+10>inkMax()){inkFull();return}
+  st.push(x,y);NET.inkLen+=String(x).length+String(y).length+2;pubInk();
+});
+{const oc=$("clr").onclick;$("clr").onclick=e=>{oc(e);if(NET.on&&NET.ink){NET.ink.s=[];NET.inkLen=40;publish()}}}
+
+function netRender(){
+  if(!NET.on)return;
+  const NS=hostState();
+  if(!NS){
+    if(NET.prev.phase!=="wait"){NET.prev.phase="wait";show("room")}
+    $("roomCode").textContent=NET.code;$("plist").innerHTML="";$("startOnline").hidden=true;$("roomSettings").hidden=true;
+    if(NET.hadHost)$("rstat").textContent=`The host disconnected. Waiting for them to rejoin room ${NET.code}…`;
+    else if(!$("rstat").textContent)$("rstat").textContent="Looking for the host…";
+    return;
+  }
+  NET.hadHost=true;
+  const ph=NS.phase,me=NS.players.find(p=>p.id===NET.pid),myT=me?me.team:-1,team=NS.turn%2;
+  const gv=NS.players.find(p=>p.id===NS.giver),gname=gv?String(gv.name):"Someone",amG=NS.giver===NET.pid;
+  const changed=NET.prev.phase!==ph;NET.prev.phase=ph;
+  const scr={lobby:"room",ready:"ready",play:"play",over:"over",final:"final"}[ph]||"room";
+  if(changed&&!(ph==="lobby"&&$("setup").classList.contains("on")))show(scr);
+  if(ph==="lobby"){renderRoom(NS,me);return}
+  if(ph==="ready"){
+    netScores($("sc1"),NS,myT,team);
+    $("readyT").textContent=amG?"You're the clue giver!":`${gname} is the clue giver`;
+    $("readyS").textContent=`${NS.t[team]}, turn ${Math.floor(NS.turn/2)+1} of ${NS.total/2}. `+(amG?"Only you will see the clues. Tap start when your team is ready.":myT===team?`Get ready to guess what ${gname} gives you!`:"The other team is up. Watch and cheer them on!");
+    $("begin").hidden=!(amG||NET.host);
+    $("begin").textContent=amG?"I'm ready, start the clock":`Start for ${gname}`;
+    $("quit").hidden=!NET.host;
+  }
+  if(ph==="play"){
+    if(changed)NET.prev.pts=NS.pts;
+    $("pause").hidden=true;
+    $("playTeam").textContent=amG?`${NS.t[team]} · You're giving clues`:`${NS.t[team]} · ${gname} is giving clues`;
+    $("secs").textContent=NS.left;
+    $("bar").firstElementChild.style.width=(NS.left/NS.secs*100)+"%";
+    $("bar").classList.toggle("hurry",NS.left<=10);
+    if(NS.cardN!==NET.lastCardN&&NS.card){
+      NET.lastCardN=NS.cardN;NET.ink=null;NET.inkLen=0;
+      const m=MODES[NS.card.m]||MODES.act;
+      pad.classList.remove("watch");
+      if(amG){cur=Object.assign({},NS.card);render(cur,true)}
+      else{
+        closePad();$("drawBtn").hidden=true;
+        $("mode").textContent=m.n;$("mode").style.background=m.c;
+        $("word").textContent=myT===team?"Guess it!":"Watch and cheer!";
+        $("hint").textContent=NS.card.m==="pic"?`${gname} is drawing. Shout your guesses!`:`${gname} is giving the clue. Shout your guesses!`;
+        const c=$("card");c.classList.remove("flip");void c.offsetWidth;c.classList.add("flip");
+        if(NS.card.m==="pic"){openPad();pad.classList.add("watch")}
+      }
+    }
+    if(!amG&&NS.card&&NS.card.m==="pic"){let gs=null;NET.states.forEach(s=>{if(s&&s.pid===NS.giver)gs=s});drawInk(NS,gs)}
+    ["got","skip","undo"].forEach(id=>$(id).hidden=!amG);
+    $("pts").textContent=NS.pts;
+    if(NS.pts>(NET.prev.pts??NS.pts)){gobble();buzzVib(40)}
+    if(NS.left<=5&&NS.left>0&&NS.left!==NET.prev.left)tick();
+    NET.prev.pts=NS.pts;NET.prev.left=NS.left;
+  }
+  if(ph==="over"){
+    if(changed){buzz();buzzVib([200,80,200]);closePad()}
+    const lt=(NS.turn+1)%2;
+    $("overT").textContent=NS.pts>=6?"Gobble-tastic!":NS.pts>=3?"Time's up!":"Time's up, turkeys!";
+    $("overS").textContent=`${NS.t[lt]} scored ${NS.pts} point${NS.pts===1?"":"s"} this turn with ${gname} giving clues.`;
+    $("log").innerHTML=(NS.hist||[]).map(h=>`<li class="${h.ok?"g":"s"}">${esc(h.w)}</li>`).join("");
+    netScores($("sc2"),NS,myT,NS.turn<NS.total?team:-1);
+    $("next").hidden=!NET.host;
+    $("next").textContent=NS.turn>=NS.total?"See who won":`Next up: ${NS.t[team]}`;
+  }
+  if(ph==="final"){
+    const [a,b]=NS.s.map(Number),w=a>b?0:1;
+    $("winT").textContent=a===b?"It's a tie!":`${NS.t[w]} win!`;
+    $("winS").textContent=a===b?"Everybody gets an extra slice of pie.":`${NS.t[w]} get the wishbone. ${NS.t[1-w]} do the dishes (just kidding... maybe).`;
+    netScores($("sc3"),NS,myT,-1);
+    $("again").hidden=!NET.host;
+    $("newTeams").textContent=NET.host?"Back to the room":"Leave room";
+    if(changed){confetti();gobble()}
+  }
+}
+
+function unhideAll(){
+  ["begin","quit","got","skip","undo","next","again","pause"].forEach(id=>$(id).hidden=false);
+  $("begin").textContent="I'm ready, start the clock";$("newTeams").textContent="Change teams";
+  pad.classList.remove("watch");closePad();
+}
+function setupMode(){$("start").hidden=NET.on;$("backRoom").hidden=!NET.on;$("toOnline").hidden=NET.on}
+function refreshRejoin(){const last=store.get("ggg-last",""),b=$("rejoin");if(!NET.on&&typeof last==="string"&&/^[A-Z]{4}$/.test(last)){b.hidden=false;b.textContent=`Rejoin room ${last}`}else b.hidden=true}
+function leaveRoom(){
+  if(NET.T){try{NET.T.leave()}catch(e){}}
+  stopClock();clearTimeout(NET.waitT);
+  if(NET.host)store.set("ggg-host-"+NET.code,null);
+  store.set("ggg-last","");
+  Object.assign(NET,{on:false,T:null,host:false,NS:null,states:new Map(),ink:null,acts:[],prev:{}});
+  setUrl("");unhideAll();setupMode();refreshRejoin();lstat("");show("lobby");
+}
+
+const wrapBtn=(id,k)=>{const o=$(id).onclick;$(id).onclick=e=>NET.on?netAct(k):o(e)};
+[["begin","begin"],["got","got"],["skip","skip"],["undo","undo"],["next","next"],["quit","end"],["again","again"]].forEach(([id,k])=>wrapBtn(id,k));
+{const o=$("newTeams").onclick;$("newTeams").onclick=e=>{if(!NET.on)return o(e);if(NET.host)netAct("lobby");else leaveRoom()}}
+
+$("lname").value=store.get("ggg-name","");
+$("jcode").value=urlCode();
+$("create").onclick=()=>connect(randCode(),true);
+$("join").onclick=()=>{const c=$("jcode").value.trim().toUpperCase();if(!/^[A-Z]{4}$/.test(c)){lstat("Room codes are 4 letters.");return}connect(c,false)};
+$("jcode").addEventListener("keydown",e=>{if(e.key==="Enter")$("join").click()});
+$("rejoin").onclick=()=>{const c=store.get("ggg-last","");if(c){$("jcode").value=c;connect(c,false)}};
+$("solo").onclick=()=>show("setup");
+$("toOnline").onclick=()=>{refreshRejoin();show("lobby")};
+$("roomSettings").onclick=()=>show("setup");
+$("backRoom").onclick=()=>{if(NET.host&&NET.NS){NET.NS.t=teamNames();NET.NS.secs=cfg.secs;NET.NS.total=cfg.rounds*2;publish()}NET.prev.phase=null;netRender()};
+$("startOnline").onclick=()=>netAct("start");
+$("leave").onclick=leaveRoom;
+$("plist").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-id]");
+  if(!b||!NET.host||!NET.NS||NET.NS.phase!=="lobby")return;
+  const p=NET.NS.players.find(x=>x.id===b.dataset.id);
+  if(p){p.team=1-p.team;publish();netRender()}
+});
+setupMode();refreshRejoin();
+}
+</script>
+</body>
+</html>

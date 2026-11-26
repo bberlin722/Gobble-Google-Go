@@ -395,9 +395,10 @@ async function makeTransport(code){
     g((d,id)=>onMsg(d,id));
     room.onPeerJoin(joined);room.onPeerLeave(left);
   }else{
-    send=(d,id)=>{try{Promise.resolve(action.send(d,id?{target:id}:undefined)).catch(()=>{})}catch(e){}};
-    action.onMessage=(d,meta)=>onMsg(d,meta&&meta.peerId);
-    room.onPeerJoin=joined;room.onPeerLeave=left;
+    const sub=(obj,name,fn)=>{if(typeof obj[name]==="function")obj[name](fn);else obj[name]=fn};
+    send=(d,id)=>{try{Promise.resolve(id?action.send(d,{target:id}):action.send(d)).catch(()=>{})}catch(e){}};
+    sub(action,"onMessage",(d,meta)=>onMsg(d,typeof meta==="string"?meta:meta&&meta.peerId));
+    sub(room,"onPeerJoin",joined);sub(room,"onPeerLeave",left);
   }
   const iv=setInterval(()=>{if(mine)send(mine)},3000);
   return{
